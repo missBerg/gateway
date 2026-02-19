@@ -84,13 +84,12 @@ npm run build
 
 ## Data Format
 
-Data is bundled from `src/data/versions/*.ts` and updated automatically via the `update-benchmark-data` GitHub Action when releases are published.
+The dashboard expects your benchmark data to be available via API endpoints:
 
-**Manual update:** To add benchmark data for a release locally:
-```bash
-node tools/scripts/update-benchmark-data.mjs <version>
-# Example: node tools/scripts/update-benchmark-data.mjs 1.7.0
-```
+- `/api/versions` - List of available versions
+- `/api/data/{version}` - Performance data for a specific version
+
+See your project's API documentation for the exact data format expected.
 
 ## Browser Support
 

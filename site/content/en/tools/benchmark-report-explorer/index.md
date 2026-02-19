@@ -36,7 +36,7 @@ includeBenchmark: true
 <div class="bt-container">
   <h1 class="bt-title">Performance Benchmark Report Explorer</h1>
   <p class="bt-description">
-    Explore benchmark results from Envoy Gateway Releases. The test code is open source and available for you to run and contribute to.
+    Explore benchmark results from Envoy Gateway Releleases. The test code is open source and available for you to run and contribute to.
   </p>
   <p class="bt-description">Curious to learn more? Join the conversation in <code>#gateway-users</code> channel in <a href="https://communityinviter.com/apps/envoyproxy/envoy">Envoy Slack</a></p>
 

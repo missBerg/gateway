@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import VersionSelector from './VersionSelector';
 import SummaryCards from './SummaryCards';
 import OverviewTab from './OverviewTab';
@@ -32,6 +32,7 @@ export const EmbeddableBenchmarkDashboard: React.FC<EmbeddableDashboardConfig> =
     tabs: ['overview', 'latency', 'resources']
   }
 }) => {
+  // Use the existing useVersionData hook
   const versionData = useVersionData();
 
   // Apply theme class to container
