@@ -53,16 +53,8 @@ You can customize the dashboard behavior with these options:
 |--------|-------------|---------|
 | `data-theme` | Color theme (`light` or `dark`) | `light` |
 | `data-version` | Which version to show initially | First available version |
-| `data-dynamic` | Fetch data from GitHub releases (`true`) or use bundled data (`false`) | `true` |
 | `data-tabs` | Which tabs to display | `overview,latency,resources` |
 | `data-show-header` | Show the dashboard title | `false` |
-
-### Dynamic Mode (Recommended)
-
-When `data-dynamic="true"`, the dashboard fetches benchmark data directly from GitHub release artifacts at:
-`https://github.com/envoyproxy/gateway/releases/download/vX.Y.Z/benchmark_result.json`
-
-This eliminates the need to manually update version data when new releases are published. A Netlify serverless function (`netlify/functions/benchmark-proxy.ts`) proxies the request to avoid CORS restrictions.
 
 ## Example
 
@@ -92,15 +84,13 @@ npm run build
 
 ## Data Format
 
-**Static mode** (default for GitHub Pages): Data is bundled from `src/data/versions/*.ts`. Updated automatically via the `update-benchmark-data` GitHub Action when releases are published.
+Data is bundled from `src/data/versions/*.ts` and updated automatically via the `update-benchmark-data` GitHub Action when releases are published.
 
 **Manual update:** To add benchmark data for a release locally:
 ```bash
 node tools/scripts/update-benchmark-data.mjs <version>
 # Example: node tools/scripts/update-benchmark-data.mjs 1.7.0
 ```
-
-**Dynamic mode** (`data-dynamic="true"`): Fetches from GitHub at runtime. Requires Netlify (or similar) for the CORS proxy. Use when deploying to Netlify.
 
 ## Browser Support
 

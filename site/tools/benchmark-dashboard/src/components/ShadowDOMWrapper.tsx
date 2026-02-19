@@ -9,7 +9,6 @@ interface ShadowDOMWrapperProps {
   apiBase?: string;
   initialVersion?: string;
   theme?: 'light' | 'dark';
-  dynamic?: boolean;
   containerClassName?: string;
   containerId?: string;
   features?: {
