@@ -368,6 +368,14 @@ nav.foldable-nav {
 
   .td-sidebar__inner {
     padding-top: 0;
+
+    // Prevent sidebar from overlapping footer when using position: sticky.
+    // On desktop, constrain height so long nav scrolls within viewport.
+    @include media-breakpoint-up(lg) {
+      max-height: calc(100vh - 8rem);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
   }
 
   .td-sidebar-nav {
