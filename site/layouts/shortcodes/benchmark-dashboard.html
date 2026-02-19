@@ -2,7 +2,7 @@
 {{- $apiBase := .Get "apiBase" | default site.Params.benchmark.apiBase -}}
 {{- $version := .Get "version" | default "latest" -}}
 {{- $theme := .Get "theme" | default "light" -}}
-{{- $dynamic := .Get "dynamic" | default "true" -}}
+{{- $dynamic := .Get "dynamic" | default "false" -}}
 {{- $showHeader := .Get "showHeader" | default "false" -}}
 {{- $showVersionSelector := .Get "showVersionSelector" | default "true" -}}
 {{- $showSummaryCards := .Get "showSummaryCards" | default "true" -}}

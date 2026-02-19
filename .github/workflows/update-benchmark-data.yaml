@@ -1,0 +1,66 @@
+name: Update Benchmark Data
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to update (e.g. 1.7.0). Leave empty to use the latest release.'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            # github.event.release.tag_name is e.g. "v1.7.0"
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          else
+            echo "Error: version required for workflow_dispatch" >&2
+            exit 1
+          fi
+
+      - name: Check for benchmark_result.json
+        id: check
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/benchmark_result.json")
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "benchmark_result.json not found for v${VERSION} (HTTP $HTTP_CODE), skipping"
+          fi
+
+      - name: Update benchmark data
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          node tools/scripts/update-benchmark-data.mjs "${{ steps.version.outputs.version }}"
+
+      - name: Create Pull Request
+        if: steps.check.outputs.exists == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update-benchmark-data-${{ steps.version.outputs.version }}
+          delete-branch: true
+          commit-message: "chore: add benchmark data for v${{ steps.version.outputs.version }}"
+          title: "Add benchmark data for v${{ steps.version.outputs.version }}"
+          body: "Automatically generated. Adds benchmark data for v${{ steps.version.outputs.version }} to the Performance Benchmark Report Explorer."
+          labels: automated,benchmark

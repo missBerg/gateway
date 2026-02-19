@@ -92,12 +92,15 @@ npm run build
 
 ## Data Format
 
-**Dynamic mode** (default): Data is fetched from GitHub releases. No manual updates needed.
+**Static mode** (default for GitHub Pages): Data is bundled from `src/data/versions/*.ts`. Updated automatically via the `update-benchmark-data` GitHub Action when releases are published.
 
-**Static mode** (`data-dynamic="false"`): Data is bundled from `src/data/versions/*.ts`. Use when:
-- Running without Netlify (no proxy for CORS)
-- You need offline support
-- You want to customize or curate the version list
+**Manual update:** To add benchmark data for a release locally:
+```bash
+node tools/scripts/update-benchmark-data.mjs <version>
+# Example: node tools/scripts/update-benchmark-data.mjs 1.7.0
+```
+
+**Dynamic mode** (`data-dynamic="true"`): Fetches from GitHub at runtime. Requires Netlify (or similar) for the CORS proxy. Use when deploying to Netlify.
 
 ## Browser Support
 
