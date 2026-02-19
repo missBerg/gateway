@@ -37,6 +37,7 @@ function initializeBenchmarkDashboardShadow() {
           theme: (htmlElement.dataset.theme as 'light' | 'dark') || 'light',
           containerClassName: htmlElement.dataset.containerClass || '',
           containerId: `benchmark-dashboard-${index}`,
+          dynamic: htmlElement.dataset.dynamic === 'true',
           features: {
             header: htmlElement.dataset.showHeader === 'true',
             versionSelector: htmlElement.dataset.showVersionSelector !== 'false',

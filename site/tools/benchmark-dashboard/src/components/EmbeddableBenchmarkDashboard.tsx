@@ -6,12 +6,17 @@ import LatencyTab from './LatencyTab';
 import ResourcesTab from './ResourcesTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVersionData } from '@/hooks/useVersionData';
+import { useDynamicVersionData } from '@/hooks/useDynamicVersionData';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export interface EmbeddableDashboardConfig {
   apiBase?: string;
   initialVersion?: string;
   theme?: 'light' | 'dark';
   containerClassName?: string;
+  /** When true, fetches benchmark data from GitHub releases instead of bundled data */
+  dynamic?: boolean;
   features?: {
     header?: boolean;
     versionSelector?: boolean;
@@ -25,6 +30,7 @@ export const EmbeddableBenchmarkDashboard: React.FC<EmbeddableDashboardConfig> =
   initialVersion,
   theme = 'light',
   containerClassName = '',
+  dynamic = false,
   features = {
     header: false, // Let Hugo handle the header
     versionSelector: true,
@@ -32,8 +38,16 @@ export const EmbeddableBenchmarkDashboard: React.FC<EmbeddableDashboardConfig> =
     tabs: ['overview', 'latency', 'resources']
   }
 }) => {
-  // Use the existing useVersionData hook
-  const versionData = useVersionData();
+  // Use dynamic fetch from GitHub releases when dynamic=true, otherwise use bundled data
+  const staticData = useVersionData();
+  const dynamicData = useDynamicVersionData(
+    typeof window !== 'undefined' ? window.location.origin : undefined
+  );
+  const versionData = dynamic ? dynamicData : staticData;
+
+  // Merge isLoading and error from dynamic data when in dynamic mode
+  const isLoading = dynamic && 'isLoading' in versionData && versionData.isLoading;
+  const error = dynamic && 'error' in versionData ? versionData.error : null;
 
   // Apply theme class to container
   useEffect(() => {
@@ -72,6 +86,27 @@ export const EmbeddableBenchmarkDashboard: React.FC<EmbeddableDashboardConfig> =
         </div>
       )}
 
+      {/* Error state when using dynamic mode */}
+      {dynamic && error && (
+        <Alert className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Failed to load benchmark data</AlertTitle>
+          <AlertDescription>
+            <span className="block mb-2">{error}</span>
+            {'refetch' in versionData && (
+              <button
+                type="button"
+                onClick={() => versionData.refetch()}
+                className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry
+              </button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Version selector */}
       {features.versionSelector && (
         <div className="mb-6">
@@ -86,8 +121,18 @@ export const EmbeddableBenchmarkDashboard: React.FC<EmbeddableDashboardConfig> =
         </div>
       )}
 
-      {/* Summary cards */}
-      {features.summaryCards && versionData.performanceSummary && (
+      {/* Loading state when using dynamic mode */}
+      {dynamic && isLoading && (
+        <div className="flex items-center justify-center py-12 mb-6">
+          <RefreshCw className="h-8 w-8 animate-spin text-purple-600 mr-3" />
+          <span className="text-gray-600 dark:text-gray-300">
+            Loading benchmark data for v{versionData.selectedVersion}...
+          </span>
+        </div>
+      )}
+
+      {/* Summary cards - hide when loading in dynamic mode */}
+      {features.summaryCards && versionData.performanceSummary && !(dynamic && isLoading) && (
         <div className="mb-8">
           <SummaryCards
             performanceSummary={versionData.performanceSummary}
@@ -96,8 +141,8 @@ export const EmbeddableBenchmarkDashboard: React.FC<EmbeddableDashboardConfig> =
         </div>
       )}
 
-      {/* Tabs */}
-      {features.tabs && features.tabs.length > 0 && (
+      {/* Tabs - hide when loading in dynamic mode */}
+      {features.tabs && features.tabs.length > 0 && !(dynamic && isLoading) && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
           <Tabs defaultValue={features.tabs[0]} className="w-full">
             <TabsList className={`grid w-full ${features.tabs.length === 1 ? 'grid-cols-1' : features.tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'} bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-auto p-0 rounded-none`}>

@@ -2,6 +2,7 @@
 {{- $apiBase := .Get "apiBase" | default site.Params.benchmark.apiBase -}}
 {{- $version := .Get "version" | default "latest" -}}
 {{- $theme := .Get "theme" | default "light" -}}
+{{- $dynamic := .Get "dynamic" | default "true" -}}
 {{- $showHeader := .Get "showHeader" | default "false" -}}
 {{- $showVersionSelector := .Get "showVersionSelector" | default "true" -}}
 {{- $showSummaryCards := .Get "showSummaryCards" | default "true" -}}
@@ -16,6 +17,7 @@
   data-api-base="{{ $apiBase }}"
   data-version="{{ $version }}"
   data-theme="{{ $theme }}"
+  data-dynamic="{{ $dynamic }}"
   data-show-header="{{ $showHeader }}"
   data-show-version-selector="{{ $showVersionSelector }}"
   data-show-summary-cards="{{ $showSummaryCards }}"
