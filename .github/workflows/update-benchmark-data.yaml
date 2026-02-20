@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to update (e.g. 1.7.0). Leave empty to use the latest release.'
+        description: 'Version to update (e.g. 1.7.0). Leave empty for latest release (backfill).'
         required: false
 
 permissions:
@@ -31,8 +31,13 @@ jobs:
             VERSION="${VERSION#v}"
             echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           else
-            echo "Error: version required for workflow_dispatch" >&2
-            exit 1
+            # workflow_dispatch with empty version: use latest release
+            VERSION=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
+            if [ -z "$VERSION" ]; then
+              echo "Error: could not fetch latest release" >&2
+              exit 1
+            fi
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check for benchmark_result.json
@@ -52,6 +57,11 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         run: |
           node tools/scripts/update-benchmark-data.mjs "${{ steps.version.outputs.version }}"
+
+      - name: Build benchmark dashboard
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          cd site/tools/benchmark-dashboard && npm install && npm run build
 
       - name: Create Pull Request
         if: steps.check.outputs.exists == 'true'
