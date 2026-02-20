@@ -1,0 +1,89 @@
+name: Update Benchmark Data
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to update (e.g. 1.7.0). Leave empty for latest release (backfill).'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Get version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            # github.event.release.tag_name is e.g. "v1.7.0"
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          else
+            # workflow_dispatch with empty version: use latest release
+            VERSION=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
+            if [ -z "$VERSION" ]; then
+              echo "Error: could not fetch latest release" >&2
+              exit 1
+            fi
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check for benchmark_result.json
+        id: check
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/benchmark_result.json")
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "benchmark_result.json not found for v${VERSION} (HTTP $HTTP_CODE), skipping"
+          fi
+
+      - name: Update benchmark data
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          node tools/scripts/update-benchmark-data.mjs "${{ steps.version.outputs.version }}"
+
+      - name: Build benchmark dashboard
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          cd site/tools/benchmark-dashboard && npm install && npm run build
+
+      - name: Create Pull Request
+        if: steps.check.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BRANCH="update-benchmark-data-${VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${BRANCH}"
+          git add site/tools/benchmark-dashboard/src/data/versions/v${VERSION}.ts \
+                  site/tools/benchmark-dashboard/src/data/index.ts \
+                  site/static/js/benchmark-dashboard.js \
+                  site/static/css/benchmark-dashboard.css
+          git commit -m "chore: add benchmark data for v${VERSION}"
+          git push origin "${BRANCH}"
+          gh pr create \
+            --title "Add benchmark data for v${VERSION}" \
+            --body "Automatically generated. Adds benchmark data for v${VERSION} to the Performance Benchmark Report Explorer." \
+            --base "${{ github.event.repository.default_branch }}" \
+            --head "${BRANCH}" \
+            --label automated,benchmark
