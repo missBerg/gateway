@@ -19,6 +19,7 @@ import (
 	"github.com/envoyproxy/gateway/internal/gatewayapi/resource"
 	"github.com/envoyproxy/gateway/internal/gatewayapi/status"
 	"github.com/envoyproxy/gateway/internal/ir"
+	"github.com/envoyproxy/gateway/internal/utils/http"
 )
 
 type FiltersTranslator interface {
@@ -207,6 +208,16 @@ func (t *Translator) ProcessGRPCFilters(
 		default:
 			errs.Add(t.processUnsupportedHTTPFilter(string(filter.Type), httpFiltersContext))
 		}
+	}
+
+	if httpFiltersContext.DirectResponse != nil && len(httpFiltersContext.Mirrors) > 0 {
+		httpFiltersContext.DirectResponse = nil
+		httpFiltersContext.Mirrors = nil
+
+		errs.Add(status.NewRouteStatusError(
+			errors.New(requestMirrorDirectResponseConflictMsg),
+			gwapiv1.RouteReasonIncompatibleFilters,
+		).WithType(gwapiv1.RouteConditionAccepted))
 	}
 
 	return httpFiltersContext, errs.GetAllErrors()
@@ -417,7 +428,7 @@ func (t *Translator) processRedirectFilter(
 	if redirect.StatusCode != nil {
 		redirectCode := int32(*redirect.StatusCode)
 		// Envoy supports 302, 303, 307, and 308, but gateway API only includes 301 and 302
-		if redirectCode == 301 || redirectCode == 302 {
+		if http.SupportedRedirectCodes.Has(redirectCode) {
 			redir.StatusCode = &redirectCode
 		} else {
 			return status.NewRouteStatusError(
@@ -893,9 +904,8 @@ func (t *Translator) processExtensionRefHTTPFilter(extFilter *gwapiv1.LocalObjec
 				if hrf.Spec.DirectResponse != nil {
 					dr := &ir.CustomResponse{}
 					if hrf.Spec.DirectResponse.Body != nil {
-						body := hrf.Spec.DirectResponse.Body
 						var err error
-						if dr.Body, err = t.getCustomResponseBody(body, filterNs); err != nil {
+						if dr.Body, err = t.getCustomResponseBody(hrf.Spec.DirectResponse.Body, filterNs); err != nil {
 							return t.processInvalidHTTPFilter(string(extFilter.Kind), filterContext, err)
 						}
 					}
@@ -938,7 +948,7 @@ func (t *Translator) processExtensionRefHTTPFilter(extFilter *gwapiv1.LocalObjec
 
 				if hrf.Spec.CredentialInjection != nil {
 					secret, err := t.validateSecretRef(
-						false,
+						true,
 						crossNamespaceFrom{
 							group:     egv1a1.GroupName,
 							kind:      resource.KindHTTPRouteFilter,
@@ -1041,7 +1051,7 @@ func (t *Translator) processRequestMirrorFilter(
 
 	destName := fmt.Sprintf("%s-mirror-%d", irRouteDestinationName(filterContext.Route, filterContext.RuleIdx), filterIdx)
 	settingName := irDestinationSettingName(destName, -1 /*unused*/)
-	ds, _, err := t.processDestination(settingName, mirrorBackendRef, filterContext.ParentRef, filterContext.Route, resources)
+	ds, _, err := t.processDestination(settingName, mirrorBackendRef, filterContext.ParentRef, filterContext.Route, resources, nil)
 	if err != nil {
 		return err
 	}

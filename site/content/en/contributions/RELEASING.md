@@ -65,6 +65,13 @@ export GITHUB_REMOTE=origin
 9. Create a topic branch for updating the [Envoy proxy image][] and [Envoy Ratelimit image][] to the tag supported by the release.
  Please note that the tags should be updated in both the source code and the Helm chart. Reference [PR #5872][]
    for additional details on updating the image tag.
+
+    (+v1.8.x only) After updating the Envoy proxy image tag, update the dynamic module SDK and example dependencies:
+
+   ```shell
+   make update-dynamic-module-deps ENVOY_VERSION=v${ENVOY_PROXY_VERSION}
+   ```
+
 10. Sign, commit, and push your changes to your fork.
 11. Submit a [Pull Request][] to merge the changes into the `release/v${MAJOR_VERSION}.${MINOR_VERSION}` branch.
 12. Do not proceed until your PR has merged into the release branch and the [Build and Test][] has completed for your PR.
@@ -194,7 +201,7 @@ export GITHUB_REMOTE=origin
    2. Cherry-pick the commits from `main` that differ from the release branch, e.g. `git cherry-pick <present commit in rc>..<latest commit on main> -s`
    3. Run tests locally, e.g. `make lint`.
    4. Sign, commit, and push your topic branch to your Envoy Gateway fork.
-   5. Submit a PR to merge the topic from of your fork into the Envoy Gateway release branch.
+   5. Submit a PR to merge the topic branch of your fork into the Envoy Gateway release branch.
    6. Do not proceed until the PR has merged and CI passes for the merged PR.
    7. If you are still on your topic branch, change to the release branch:
 
@@ -273,7 +280,7 @@ The following steps should be used for creating a patch release.
 ### Prerequisites
 
 - Permissions to push to the Envoy Gateway repository.
-- A minor release has already been released. Refer to the [Minor Release](#minor-candidate) section for additional details on releasing a minor release.
+- A minor release has already been released. Refer to the [Minor Release](#minor-release) section for additional details on releasing a minor release.
 
 Set environment variables for use in subsequent steps:
 
@@ -288,7 +295,7 @@ export GITHUB_REMOTE=origin
 2. Create a topic branch for adding the release notes.
 
    1. Create the release notes. The release note should only include the changes since the last minor or patch release.
-   1. Update `site/layouts/shortcodes/helm-version.html`, update the short code for `{{- with (strings.HasPrefix $pagePrefix "doc") -}}` to the latest patch version. For example:
+   1. Update `site/layouts/shortcodes/helm-version.html`, update the short code for `{{- with (strings.HasPrefix $pagePrefix "docs") -}}` to the latest patch version. For example:
 
       ```console
       {{- $pagePrefix := (index (split $.Page.File.Dir "/") 0) -}}
@@ -301,12 +308,12 @@ export GITHUB_REMOTE=origin
       {{- with (strings.HasPrefix $pagePrefix "v1.2") -}}
       {{- "v1.2.1" -}}
       {{- end -}}
-      {{- with (strings.HasPrefix $pagePrefix "doc") -}}
+      {{- with (strings.HasPrefix $pagePrefix "docs") -}}
       {{- "v1.2.1" -}}
       {{- end -}}
       ```
 
-   1. Update `site/layouts/shortcodes/yaml-version.html`, update the short code for `{{- with (strings.HasPrefix $pagePrefix "doc") -}}` to the latest patch version. For example:
+   1. Update `site/layouts/shortcodes/yaml-version.html`, update the short code for `{{- with (strings.HasPrefix $pagePrefix "docs") -}}` to the latest patch version. For example:
 
       ```console
       {{- $pagePrefix := (index (split $.Page.File.Dir "/") 0) -}}
@@ -319,7 +326,7 @@ export GITHUB_REMOTE=origin
       {{- with (strings.HasPrefix $pagePrefix "v1.2") -}}
       {{- "v1.2.1" -}}
       {{- end -}}
-      {{- with (strings.HasPrefix $pagePrefix "doc") -}}
+      {{- with (strings.HasPrefix $pagePrefix "docs") -}}
       {{- "v1.2.1" -}}
       {{- end -}}
       ```
@@ -336,14 +343,14 @@ export GITHUB_REMOTE=origin
 7. Cherry-pick the release note that you created in the previous step to the release branch. The release note will be included in the release artifacts.
    1. Create a topic branch from the release branch.
    2. Cherry-pick the release note and release announcement commit from `main` to the topic branch.
-   3. Submit a PR to merge the topic from of your fork into the release branch.
+   3. Submit a PR to merge the topic branch of your fork into the release branch.
 
 8. Cherry-pick the commits that you want to include in the patch release.
    1. Create a topic branch from the release branch.
    2. Cherry-pick the commits from `main` that you want to include in the patch release.
    3. Run tests locally, e.g. `make lint`.
    4. Sign, commit, and push your topic branch to your Envoy Gateway fork.
-   5. Submit a PR to merge the topic from of your fork into the release branch.
+   5. Submit a PR to merge the topic branch of your fork into the release branch.
    6. Do not proceed until the PR has merged and CI passes for the merged PR.
    7. If you are still on your topic branch, change to the release branch:
 
@@ -383,8 +390,8 @@ export GITHUB_REMOTE=origin
    ```console
    # Release Announcement
 
-   Check out the [v${MAJOR_VERSION}.${MINOR_VERSION}.${MINOR_VERSION}  release announcement]
-   (https://gateway.envoyproxy.io/news/releases/notes/v${MAJOR_VERSION}.${MINOR_VERSION}.${MINOR_VERSION}.html) to learn more about the release.
+   Check out the [v${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}  release announcement]
+   (https://gateway.envoyproxy.io/news/releases/notes/v${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}.html) to learn more about the release.
    ```
 
 17. If this patch release is the latest release, update the `lastVersionTag` in `test/e2e/tests/eg_upgrade.go` to reflect the latest prior release. Refer to [PR #4666] as an example.
