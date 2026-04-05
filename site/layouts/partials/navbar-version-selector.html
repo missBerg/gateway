@@ -21,7 +21,7 @@
         {{ end -}}
         {{ $href := printf "%s%s" $url $path -}}
         {{ if ne $baseURL "/" }}
-        {{ $href := printf "%s%s%s" $baseURL $url $path -}}
+        {{ $href = printf "%s%s%s" $baseURL $url $path -}}
         {{ end }}
         <li><a class="dropdown-item" href="{{ $href }}">{{ $text }}</a></li>
         {{ end -}}
